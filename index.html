@@ -3,37 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Générateur de CV Multi-Modèles</title>
+    <title>Générateur de CV Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* --- Styles de l'interface (Formulaire) --- */
-        body { font-family: sans-serif; background: #eceff1; padding: 15px; }
-        .config-panel { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; }
-        button { width: 100%; padding: 15px; background: #2c3e50; color: white; border: none; border-radius: 5px; font-weight: bold; margin-top: 10px;}
+        :root { --primary: #2c3e50; --accent: #3498db; --text: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
 
-        /* --- Zone du CV (Cachée par défaut) --- */
-        #cv-container { display: none; width: 210mm; min-height: 297mm; background: white; padding: 0; margin: 0; }
+        /* Interface de saisie mobile-friendly */
+        .editor-ui { padding: 20px; background: white; border-bottom: 2px solid #ddd; overflow-y: auto; flex: 1; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: var(--primary); }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        
+        .btn-action { background: var(--accent); color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 
-        /* --- MODÈLE 1 : CLASSIQUE (Sobre, centré) --- */
-        .modele-classique { padding: 50px; border-top: 8px solid #333; }
-        .modele-classique h1 { text-align: center; text-transform: uppercase; color: #333; }
-        .modele-classique .poste { text-align: center; color: #666; font-style: italic; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        /* --- LE TEMPLATE CV PRO (Format A4) --- */
+        #cv-preview { background: white; width: 210mm; min-height: 297mm; display: flex; color: var(--text); margin: 20px auto; box-shadow: 0 0 20px rgba(0,0,0,0.2); transform: scale(0.4); transform-origin: top center; } /* Scale pour l'aperçu mobile */
 
-        /* --- MODÈLE 2 : MODERNE (Sidebar colorée) --- */
-        .modele-moderne { display: flex; min-height: 297mm; }
-        .modele-moderne .sidebar { width: 30%; background: #34495e; color: white; padding: 30px 20px; }
-        .modele-moderne .main-content { width: 70%; padding: 40px; }
-        .modele-moderne h1 { margin: 0; color: #2ecc71; }
-        .modele-moderne .poste { font-weight: bold; font-size: 1.2em; margin-bottom: 20px; }
+        .sidebar { width: 35%; background: var(--primary); color: white; padding: 30px 20px; }
+        .main { width: 65%; padding: 40px; }
+
+        .profile-pic { width: 120px; height: 120px; border-radius: 50%; border: 4px solid white; object-fit: cover; margin-bottom: 20px; display: block; background: #95a5a6; }
+        
+        h1 { margin: 0; font-size: 24px; text-transform: uppercase; }
+        .job-title { color: var(--accent); font-size: 18px; font-weight: 300; margin-bottom: 30px; }
+        
+        .section-title { border-bottom: 2px solid var(--accent); padding-bottom: 5px; margin-top: 30px; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; }
+        .content { white-space: pre-line; margin-top: 10px; line-height: 1.6; }
+
+        /* Ajustement pour l'impression */
+        @media print { #cv-preview { transform: scale(1); margin: 0; } }
     </style>
 </head>
 <body>
 
-<div class="config-panel">
-    <h2>Créer mon CV</h2>
-    <input type="text" id="nom" placeholder="Votre Nom">
-    <input type="text" id="poste" placeholder="Poste recherché">
+<div class="editor-ui">
+    <h2>Configuration CV Pro</h2>
+    
+    <div class="input-group">
+        <label>Photo de profil</label>
+        <input type="file" id="imgInput" accept="image/*" onchange="loadPhoto(event)">
+    </div>
+
+    <div class="input-group">
+        <label>Nom Complet</label>
+        <input type="text" id="in-nom" placeholder="Ex: Jean Dupont" oninput="update()">
+    </div>
+
+    <div class="input-group">
+        <label>Titre du Poste</label>
+        <input type="text" id="in-poste" placeholder="Ex: Développeur Fullstack" oninput="update()">
+    </div>
+
+    <div class="input-group">
+        <label>Expériences & Parcours</label>
+        <textarea id="in-exp" rows="6" placeholder="Détaillez vos missions..." oninput="update()"></textarea>
+    </div>
+
+    <button class="btn-action" onclick="downloadPDF()">TÉLÉCHARGER LE PDF</button>
+</div>
+
+<div id="cv-wrapper" style="overflow: hidden; background: #555; padding-top: 20px;">
+    <div id="cv-preview">
+        <div class="sidebar">
+            <img id="out-photo" class="profile-pic" src="https://via.placeholder.com/150" alt="Photo">
+            <h3>Contact</h3>
+            <p>Email: contact@votremail.com</p>
+            <p>Tel: +225 00 00 00 00</p>
+            
+            <h3 class="section-title" style="color:white; border-color:white;">Compétences</h3>
+            <p>HTML / CSS / JS<br>Gestion de projet</p>
+        </div>
+        
+        <div class="main">
+            <h1 id="out-nom">VOTRE NOM</h1>
+            <div id="out-poste" class="job-title">TITRE DU POSTE</div>
+            
+            <div class="section-title">Expériences Professionnelles</div>
+            <div id="out-exp" class="content">Vos expériences s'afficheront ici au fur et à mesure...</div>
+            
+            <div class="section-title">Formation</div>
+            <div class="content">Diplôme Universitaire - 2024</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Mise à jour en temps réel
+    function update() {
+        document.getElementById('out-nom').innerText = document.getElementById('in-nom').value || "VOTRE NOM";
+        document.getElementById('out-poste').innerText = document.getElementById('in-poste').value || "TITRE DU POSTE";
+        document.getElementById('out-exp').innerText = document.getElementById('in-exp').value || "Détails...";
+    }
+
+    // 2. Gestion de la photo
+    function loadPhoto(event) {
+        const output = document.getElementById('out-photo');
+        output.src = URL.createObjectURL(event.target.files[0]);
+    }
+
+    // 3. Téléchargement Pro
+    function downloadPDF() {
+        const element = document.getElementById('cv-preview');
+        // On remet l'échelle à 1 pour une capture propre
+        element.style.transform = "scale(1)";
+        
+        const opt = {
+            margin: 0,
+            filename: 'Mon_CV_Pro.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            // On remet l'échelle pour l'aperçu mobile après le téléchargement
+            element.style.transform = "scale(0.4)";
+        });
+    }
+</script>
+
+</body>
+</html>
     <textarea id="exp" placeholder="Vos expériences..." rows="5"></textarea>
     
     <label>Choisir un style :</label>
