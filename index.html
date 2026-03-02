@@ -3,62 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Générateur de CV Express</title>
+    <title>Générateur de CV Multi-Modèles</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        input, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        
-        /* Style du CV final */
-        #cv-template { display: none; padding: 40px; border: 1px solid #eee; background: white; }
-        .cv-header { border-bottom: 2px solid #333; margin-bottom: 20px; }
+        /* --- Styles de l'interface (Formulaire) --- */
+        body { font-family: sans-serif; background: #eceff1; padding: 15px; }
+        .config-panel { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; }
+        button { width: 100%; padding: 15px; background: #2c3e50; color: white; border: none; border-radius: 5px; font-weight: bold; margin-top: 10px;}
+
+        /* --- Zone du CV (Cachée par défaut) --- */
+        #cv-container { display: none; width: 210mm; min-height: 297mm; background: white; padding: 0; margin: 0; }
+
+        /* --- MODÈLE 1 : CLASSIQUE (Sobre, centré) --- */
+        .modele-classique { padding: 50px; border-top: 8px solid #333; }
+        .modele-classique h1 { text-align: center; text-transform: uppercase; color: #333; }
+        .modele-classique .poste { text-align: center; color: #666; font-style: italic; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+
+        /* --- MODÈLE 2 : MODERNE (Sidebar colorée) --- */
+        .modele-moderne { display: flex; min-height: 297mm; }
+        .modele-moderne .sidebar { width: 30%; background: #34495e; color: white; padding: 30px 20px; }
+        .modele-moderne .main-content { width: 70%; padding: 40px; }
+        .modele-moderne h1 { margin: 0; color: #2ecc71; }
+        .modele-moderne .poste { font-weight: bold; font-size: 1.2em; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-<div class="container" id="form-container">
-    <h2>Mon Générateur de CV</h2>
-    <input type="text" id="nom" placeholder="Nom Complet">
-    <input type="text" id="poste" placeholder="Poste visé">
-    <textarea id="experience" placeholder="Expériences (une par ligne)" rows="4"></textarea>
-    <button onclick="genererPDF()">Télécharger mon CV (PDF)</button>
+<div class="config-panel">
+    <h2>Créer mon CV</h2>
+    <input type="text" id="nom" placeholder="Votre Nom">
+    <input type="text" id="poste" placeholder="Poste recherché">
+    <textarea id="exp" placeholder="Vos expériences..." rows="5"></textarea>
+    
+    <label>Choisir un style :</label>
+    <select id="choix-style">
+        <option value="modele-classique">Style Classique (Noir & Blanc)</option>
+        <option value="modele-moderne">Style Moderne (Sidebar Bleue)</option>
+    </select>
+    
+    <button onclick="previsualiserEtTelecharger()">Télécharger en PDF</button>
 </div>
 
-<div id="cv-template">
-    <div class="cv-header">
-        <h1 id="out-nom"></h1>
-        <h3 id="out-poste"></h3>
+<div id="cv-container">
     </div>
-    <div class="cv-body">
-        <h4>Expériences Professionnelles</h4>
-        <p id="out-experience" style="white-space: pre-line;"></p>
-    </div>
-</div>
 
 <script>
-    function genererPDF() {
-        // 1. Récupérer les données
+    function previsualiserEtTelecharger() {
         const nom = document.getElementById('nom').value;
         const poste = document.getElementById('poste').value;
-        const exp = document.getElementById('experience').value;
+        const exp = document.getElementById('exp').value;
+        const styleChoisi = document.getElementById('choix-style').value;
+        const container = document.getElementById('cv-container');
 
-        // 2. Remplir le template
-        document.getElementById('out-nom').innerText = nom;
-        document.getElementById('out-poste').innerText = poste;
-        document.getElementById('out-experience').innerText = exp;
+        // Construction dynamique du HTML selon le style
+        let htmlContenu = "";
+        
+        if(styleChoisi === "modele-classique") {
+            htmlContenu = `
+                <div class="modele-classique">
+                    <h1>${nom}</h1>
+                    <div class="poste">${poste}</div>
+                    <h3>Expériences</h3>
+                    <p style="white-space: pre-line;">${exp}</p>
+                </div>`;
+        } else {
+            htmlContenu = `
+                <div class="modele-moderne">
+                    <div class="sidebar">
+                        <h2>Contact</h2>
+                        <p>Mon Portfolio sur GitHub</p>
+                    </div>
+                    <div class="main-content">
+                        <h1>${nom}</h1>
+                        <div class="poste">${poste}</div>
+                        <hr>
+                        <h3>Mon Parcours</h3>
+                        <p style="white-space: pre-line;">${exp}</p>
+                    </div>
+                </div>`;
+        }
 
-        // 3. Configuration et conversion PDF
-        const element = document.getElementById('cv-template');
-        element.style.display = 'block'; // Afficher temporairement pour la capture
+        container.innerHTML = htmlContenu;
+        container.style.display = 'block';
 
-        html2pdf()
-          .from(element)
-          .save(nom + "_CV.pdf")
-          .then(() => {
-              element.style.display = 'none'; // Recacher après
-          });
+        // Conversion PDF
+        const options = {
+            margin: 0,
+            filename: `CV_${nom}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(options).from(container).save().then(() => {
+            container.style.display = 'none';
+        });
     }
 </script>
 
