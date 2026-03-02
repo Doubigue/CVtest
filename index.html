@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de CV Express</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        
+        /* Style du CV final */
+        #cv-template { display: none; padding: 40px; border: 1px solid #eee; background: white; }
+        .cv-header { border-bottom: 2px solid #333; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="form-container">
+    <h2>Mon Générateur de CV</h2>
+    <input type="text" id="nom" placeholder="Nom Complet">
+    <input type="text" id="poste" placeholder="Poste visé">
+    <textarea id="experience" placeholder="Expériences (une par ligne)" rows="4"></textarea>
+    <button onclick="genererPDF()">Télécharger mon CV (PDF)</button>
+</div>
+
+<div id="cv-template">
+    <div class="cv-header">
+        <h1 id="out-nom"></h1>
+        <h3 id="out-poste"></h3>
+    </div>
+    <div class="cv-body">
+        <h4>Expériences Professionnelles</h4>
+        <p id="out-experience" style="white-space: pre-line;"></p>
+    </div>
+</div>
+
+<script>
+    function genererPDF() {
+        // 1. Récupérer les données
+        const nom = document.getElementById('nom').value;
+        const poste = document.getElementById('poste').value;
+        const exp = document.getElementById('experience').value;
+
+        // 2. Remplir le template
+        document.getElementById('out-nom').innerText = nom;
+        document.getElementById('out-poste').innerText = poste;
+        document.getElementById('out-experience').innerText = exp;
+
+        // 3. Configuration et conversion PDF
+        const element = document.getElementById('cv-template');
+        element.style.display = 'block'; // Afficher temporairement pour la capture
+
+        html2pdf()
+          .from(element)
+          .save(nom + "_CV.pdf")
+          .then(() => {
+              element.style.display = 'none'; // Recacher après
+          });
+    }
+</script>
+
+</body>
+</html>
