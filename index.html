@@ -3,37 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Générateur de CV Pro</title>
+    <title>Générateur de CV Professionnel</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --text: #333; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-
-        /* Interface de saisie mobile-friendly */
-        .editor-ui { padding: 20px; background: white; border-bottom: 2px solid #ddd; overflow-y: auto; flex: 1; }
-        .input-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: var(--primary); }
-        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        :root { --cv-color: #2c3e50; }
+        body { font-family: 'Helvetica', Arial, sans-serif; background: #f4f7f6; margin: 0; padding: 0; }
         
-        .btn-action { background: var(--accent); color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        /* Interface de saisie */
+        .admin-panel { padding: 20px; background: white; max-width: 800px; margin: 20px auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        input, textarea, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        label { font-weight: bold; font-size: 0.9em; color: #555; }
+        h2 { border-left: 5px solid var(--cv-color); padding-left: 10px; margin-top: 30px; }
 
-        /* --- LE TEMPLATE CV PRO (Format A4) --- */
-        #cv-preview { background: white; width: 210mm; min-height: 297mm; display: flex; color: var(--text); margin: 20px auto; box-shadow: 0 0 20px rgba(0,0,0,0.2); transform: scale(0.4); transform-origin: top center; } /* Scale pour l'aperçu mobile */
-
-        .sidebar { width: 35%; background: var(--primary); color: white; padding: 30px 20px; }
-        .main { width: 65%; padding: 40px; }
-
-        .profile-pic { width: 120px; height: 120px; border-radius: 50%; border: 4px solid white; object-fit: cover; margin-bottom: 20px; display: block; background: #95a5a6; }
+        /* Style du CV A4 */
+        #cv-render { background: white; width: 210mm; min-height: 297mm; display: flex; margin: 20px auto; box-shadow: 0 0 20px rgba(0,0,0,0.3); color: #333; transform: scale(0.5); transform-origin: top center; }
         
-        h1 { margin: 0; font-size: 24px; text-transform: uppercase; }
-        .job-title { color: var(--accent); font-size: 18px; font-weight: 300; margin-bottom: 30px; }
-        
-        .section-title { border-bottom: 2px solid var(--accent); padding-bottom: 5px; margin-top: 30px; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; }
-        .content { white-space: pre-line; margin-top: 10px; line-height: 1.6; }
+        .sidebar { width: 30%; background: var(--cv-color); color: white; padding: 25px; }
+        .main-content { width: 70%; padding: 40px; }
 
-        /* Ajustement pour l'impression */
-        @media print { #cv-preview { transform: scale(1); margin: 0; } }
+        .photo-frame { width: 140px; height: 140px; border-radius: 50%; border: 5px solid rgba(255,255,255,0.2); object-fit: cover; margin-bottom: 20px; background: #eee; }
+        
+        .contact-item { font-size: 0.85em; margin-bottom: 10px; word-break: break-all; }
+        .skill-bar { background: rgba(255,255,255,0.2); height: 8px; border-radius: 4px; margin-top: 5px; position: relative; }
+        .skill-fill { background: white; height: 100%; border-radius: 4px; }
+
+        .cv-name { font-size: 28px; text-transform: uppercase; font-weight: bold; margin: 0; color: var(--cv-color); }
+        .cv-title { font-size: 18px; color: #7f8c8d; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        
+        .section-header { color: var(--cv-color); text-transform: uppercase; font-weight: bold; border-bottom: 2px solid var(--cv-color); margin-top: 25px; margin-bottom: 10px; padding-bottom: 3px; }
+        .item { margin-bottom: 15px; }
+        .item-date { font-weight: bold; color: #34495e; font-size: 0.9em; }
+
+        .btn-download { display: block; width: 100%; max-width: 800px; margin: 20px auto; padding: 20px; background: #27ae60; color: white; text-align: center; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
+
+        @media print { #cv-render { transform: scale(1); margin: 0; } }
     </style>
+</head>
+<body>
+
+<div class="admin-panel">
+    <h1>📝 Configurer mon CV Pro</h1>
+    
+    <div class="grid">
+        <div>
+            <label>Couleur Thème</label>
+            <input type="color" id="colorInput" value="#2c3e50" oninput="updateColor()">
+        </div>
+        <div>
+            <label>Photo</label>
+            <input type="file" accept="image/*" onchange="loadImg(event)">
+        </div>
+    </div>
+
+    <h2>Identité & Contact</h2>
+    <div class="grid">
+        <input type="text" id="inNom" placeholder="Nom Complet" oninput="up()">
+        <input type="text" id="inPoste" placeholder="Poste visé" oninput="up()">
+        <input type="email" id="inEmail" placeholder="Email" oninput="up()">
+        <input type="tel" id="inTel" placeholder="Téléphone" oninput="up()">
+        <input type="text" id="inVille" placeholder="Ville, Pays" oninput="up()">
+    </div>
+
+    <h2>Profil & Parcours</h2>
+    <textarea id="inProfil" placeholder="Résumé de votre profil..." rows="3" oninput="up()"></textarea>
+    <textarea id="inExp" placeholder="EXPÉRIENCES : Entreprise | Poste | Dates | Missions..." rows="6" oninput="up()"></textarea>
+    <textarea id="inEdu" placeholder="FORMATIONS : École | Diplôme | Dates..." rows="4" oninput="up()"></textarea>
+
+    <h2>Compétences (Niveau 0-100)</h2>
+    <div class="grid">
+        <input type="text" id="sk1" placeholder="Compétence 1" oninput="up()">
+        <input type="number" id="lv1" placeholder="Niveau %" oninput="up()">
+    </div>
+</div>
+
+<button class="btn-download" onclick="exportPDF()">TÉLÉCHARGER LE CV (PDF)</button>
+
+<div id="cv-render">
+    <div class="sidebar">
+        <img id="outPhoto" class="photo-frame" src="https://via.placeholder.com/150">
+        <h3>CONTACT</h3>
+        <div class="contact-item" id="outEmail">Email non renseigné</div>
+        <div class="contact-item" id="outTel">Tel non renseigné</div>
+        <div class="contact-item" id="outVille">Localisation</div>
+
+        <h3 style="margin-top:40px">COMPÉTENCES</h3>
+        <div id="outSkills">
+            </div>
+    </div>
+
+    <div class="main-content">
+        <h1 class="cv-name" id="outNom">VOTRE NOM</h1>
+        <div class="cv-title" id="outPoste">TITRE DU POSTE</div>
+
+        <div class="section-header">Profil</div>
+        <p id="outProfil" style="white-space: pre-line;">Texte de présentation...</p>
+
+        <div class="section-header">Expériences Professionnelles</div>
+        <div id="outExp" style="white-space: pre-line;">Détails des expériences...</div>
+
+        <div class="section-header">Formation</div>
+        <div id="outEdu" style="white-space: pre-line;">Détails des diplômes...</div>
+    </div>
+</div>
+
+<script>
+    function updateColor() {
+        const color = document.getElementById('colorInput').value;
+        document.documentElement.style.setProperty('--cv-color', color);
+    }
+
+    function loadImg(e) {
+        document.getElementById('outPhoto').src = URL.createObjectURL(e.target.files[0]);
+    }
+
+    function up() {
+        document.getElementById('outNom').innerText = document.getElementById('inNom').value || "VOTRE NOM";
+        document.getElementById('outPoste').innerText = document.getElementById('inPoste').value || "TITRE DU POSTE";
+        document.getElementById('outEmail').innerText = "📧 " + document.getElementById('inEmail').value;
+        document.getElementById('outTel').innerText = "📞 " + document.getElementById('inTel').value;
+        document.getElementById('outVille').innerText = "📍 " + document.getElementById('inVille').value;
+        document.getElementById('outProfil').innerText = document.getElementById('inProfil').value;
+        document.getElementById('outExp').innerText = document.getElementById('inExp').value;
+        document.getElementById('outEdu').innerText = document.getElementById('inEdu').value;
+
+        // Gestion compétences
+        const s1 = document.getElementById('sk1').value;
+        const l1 = document.getElementById('lv1').value;
+        if(s1) {
+            document.getElementById('outSkills').innerHTML = `
+                <div style="margin-bottom:10px">${s1}
+                    <div class="skill-bar"><div class="skill-fill" style="width:${l1}%"></div></div>
+                </div>`;
+        }
+    }
+
+    function exportPDF() {
+        const element = document.getElementById('cv-render');
+        element.style.transform = "scale(1)";
+        const opt = { margin: 0, filename: 'Mon_CV_Pro.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4' } };
+        html2pdf().set(opt).from(element).save().then(() => { element.style.transform = "scale(0.5)"; });
+    }
+</script>
+</body>
+</html>
 </head>
 <body>
 
